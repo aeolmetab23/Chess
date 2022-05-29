@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="myCanvas" style="border:2px solid #000000;">
+</canvas>
+
+<script>
+var c = document.getElementById("myCanvas");
+var ctx = c.getContext("2d");
+
+//sizing board to fit screen
+var boardSize = Math.min(window.innerWidth, window.innerHeight) * 0.95
+var squareSize = boardSize/8
+const canvas = document.querySelector("canvas");
+const resize = () => {
+  canvas.width = boardSize;
+  canvas.height = boardSize;
+}
+resize()
+window.addEventListener('resize', resize)
+
+// square colors
+var color1 = "peru";
+var color2 = "olivedrab"
+
+class square {
+  constructor(row, col, hasPiece){
+    this.row = row;
+    this.col = col;
+    this.hasPiece = hasPiece;
+  }
+  draw(){
+    ctx.beginPath();
+    ctx.lineWidth = "3";
+    ctx.strokeStyle = "black";
+    ctx.rect(this.col*squareSize, this.row*squareSize, squareSize, squareSize);
+    ctx.stroke();
+    ctx.fillStyle = this.fillcolor();
+    ctx.fill();
+  }
+  highlight(){
+    ctx.beginPath();
+    ctx.lineWidth = "3";
+    ctx.strokeStyle = "yellow";
+    ctx.rect(this.col*squareSize, this.row*squareSize, squareSize, squareSize);
+    ctx.stroke();
+  }
+  validMoveHighlight(){
+    ctx.beginPath();
+    ctx.lineWidth = "3";
+    ctx.strokeStyle = "aqua";
+    ctx.rect(this.col*squareSize, this.row*squareSize, squareSize, squareSize);
+    ctx.stroke();
+  }
+  fillcolor(){
+    if (((this.row)+(this.col))%2 == 0) {
+      return color1;
+    }
+    else{
+      return color2;
+    }
+  }
+  whichPiece(){
+    for (let num = 0; num < 16; num++) {
+      if (whitePieces[num].row == this.row && whitePieces[num].col == this.col) {
+        return whitePieces[num];
+      }
+      else if (blackPieces[num].row == this.row && blackPieces[num].col == this.col) {
+        return blackPieces[num];
+      }
+    }
+  }
+}
+
+// Create one dimensional array
+var gameBoard = new Array(8);
+// Loop to create 2D array using 1D array
+for (let row = 0; row < 8; row++) {
+    gameBoard[row] = new Array(8);
+}
+// Loop to initialize 2D array elements (game board).
+for (let row = 0; row < 8; row++) {
+  for (let col = 0; col < 8; col++) {
+    gameBoard[row][col] = new square(row,col,false);
+  }
+}
+
+//draw game board
+function drawBoard(){
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      gameBoard[row][col].draw();
+    }
+  }
+}
+
+var whitePieces = new Array(16);
+var blackPieces = new Array(16);
+
+//[pawns, rooks, knights, bishops, queen, king]
+
+function initPieces(){
+  for (let col = 0; col < 8; col++){
+    whitePieces[col] = new whitePawn(6, col);
+    whitePieces[col].place();
+    gameBoard[6][col].hasPiece = true;
+  }
+  for (let col = 0; col < 8; col++){
+    blackPieces[col] = new blackPawn(1, col);
+    blackPieces[col].place();
+    gameBoard[1][col].hasPiece = true;
+  }
+  whitePieces[8] = new whiteRook(7, 0);
+  whitePieces[8].place();
+  gameBoard[7][0].hasPiece = true;
+
+  whitePieces[9] = new whiteRook(7, 7);
+  whitePieces[9].place();
+  gameBoard[7][7].hasPiece = true;
+
+  whitePieces[10] = new whiteKnight(7, 1);
+  whitePieces[10].place();
+  gameBoard[7][1].hasPiece = true;
+
+  whitePieces[11] = new whiteKnight(7, 6);
+  whitePieces[11].place();
+  gameBoard[7][6].hasPiece = true;
+
+  whitePieces[12] = new whiteBishop(7, 2);
+  whitePieces[12].place();
+  gameBoard[7][2].hasPiece = true;
+
+  whitePieces[13] = new whiteBishop(7, 5);
+  whitePieces[13].place();
+  gameBoard[7][5].hasPiece = true;
+
+  whitePieces[14] = new whiteQueen(7, 3);
+  whitePieces[14].place();
+  gameBoard[7][3].hasPiece = true;
+
+  whitePieces[15] = new whiteKing(7, 4);
+  whitePieces[15].place();
+  gameBoard[7][4].hasPiece = true;
+
+  blackPieces[8] = new blackRook(0, 0);
+  blackPieces[8].place();
+  gameBoard[0][0].hasPiece = true;
+
+  blackPieces[9] = new blackRook(0, 7);
+  blackPieces[9].place();
+  gameBoard[0][7].hasPiece = true;
+
+  blackPieces[10] = new blackKnight(0, 1);
+  blackPieces[10].place();
+  gameBoard[0][1].hasPiece = true;
+
+  blackPieces[11] = new blackKnight(0, 6);
+  blackPieces[11].place();
+  gameBoard[0][6].hasPiece = true;
+
+  blackPieces[12] = new blackBishop(0, 2);
+  blackPieces[12].place();
+  gameBoard[0][2].hasPiece = true;
+
+  blackPieces[13] = new blackBishop(0, 5);
+  blackPieces[13].place();
+  gameBoard[0][5].hasPiece = true;
+
+  blackPieces[14] = new blackQueen(0, 3);
+  blackPieces[14].place();
+  gameBoard[0][3].hasPiece = true;
+
+  blackPieces[15] = new blackKing(0, 4);
+  blackPieces[15].place();
+  gameBoard[0][4].hasPiece = true;
+}
+
+function placePieces(){
+  for (let num = 0; num < 16; num++) {
+    if (whitePieces[num].dead == false) {
+      whitePieces[num].place()
+    }
+    if (blackPieces[num].dead == false) {
+      blackPieces[num].place()
+    }
+  }
+}
+
+// check if arr of position contains pos
+function includes(arr, pos){
+  for (let elem = 0; elem < arr.length; elem++) {
+    if (arr[elem][0] == pos[0] && arr[elem][1] == pos[1]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+class piece{
+  constructor(row, col, team){
+    this.row = row;
+    this.col = col;
+    this.team = team;
+    this.dead = false;
+    this.validMoves = [];
+    this.hasMoved = false;
+  }
+  place(){
+    var img = new Image(),
+    row = this.col*squareSize,
+    col = this.row*squareSize;
+    img.onload = function(){
+      ctx.drawImage(img, row, col, squareSize, squareSize);
+    }
+    img.src = this.pic();
+  }
+  highlightValidMoves(){
+    this.calculateValidMoves();
+    for (let num = 0; num < this.validMoves.length; num++){
+      gameBoard[this.validMoves[num][0]][this.validMoves[num][1]].validMoveHighlight();
+    }
+  }
+}
+
+class pawn extends piece {
+
+}
+
+class whitePawn extends pawn {
+  constructor(row, col){
+    super(row, col, "white");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/0/04/Chess_plt60.png"
+  }
+  calculateValidMoves(){
+    this.validMoves = [];
+    if (this.row > 0 && gameBoard[this.row - 1][this.col].hasPiece == false){
+      this.validMoves.push([this.row - 1, this.col]);
+      if (this.row > 1 && gameBoard[this.row - 2][this.col].hasPiece == false && this.hasMoved == false){
+        this.validMoves.push([this.row - 2, this.col]);
+      }
+    }
+    if (this.row > 0 && this.col - 1 > -1 && gameBoard[this.row - 1][this.col - 1].hasPiece == true){
+      if (gameBoard[this.row - 1][this.col - 1].whichPiece().team != this.team){
+        this.validMoves.push([this.row - 1, this.col - 1]);
+      }
+    }
+    if (this.row > 0 && this.col + 1 < 8 && gameBoard[this.row - 1][this.col + 1].hasPiece == true){
+      if (gameBoard[this.row - 1][this.col + 1].whichPiece().team != this.team){
+        this.validMoves.push([this.row - 1, this.col + 1]);
+      }
+    }
+  }
+}
+
+class blackPawn extends pawn {
+  constructor(row, col){
+    super(row, col, "black");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/c/cd/Chess_pdt60.png"
+  }
+  calculateValidMoves(){
+    this.validMoves = [];
+    if (this.row < 7 && gameBoard[this.row + 1][this.col].hasPiece == false){
+      this.validMoves.push([this.row + 1, this.col]);
+      if (this.row < 6 && gameBoard[this.row + 2][this.col].hasPiece == false && this.hasMoved == false){
+        this.validMoves.push([this.row + 2, this.col]);
+      }
+    }
+    if (this.row < 7 && this.col - 1 > -1 && gameBoard[this.row + 1][this.col - 1].hasPiece == true){
+      if (gameBoard[this.row + 1][this.col - 1].whichPiece().team != this.team){
+        this.validMoves.push([this.row + 1, this.col - 1]);
+      }
+    }
+    if (this.row < 7 && this.col + 1 < 8 && gameBoard[this.row + 1][this.col + 1].hasPiece == true){
+      if (gameBoard[this.row + 1][this.col + 1].whichPiece().team != this.team){
+        this.validMoves.push([this.row + 1, this.col + 1]);
+      }
+    }
+  }
+}
+
+class rook extends piece {
+  calculateValidMoves(){
+    this.validMoves = [];
+    for (let row = this.row - 1; row > -1; row--){
+      if (gameBoard[row][this.col].hasPiece == false){
+        this.validMoves.push([row, this.col]);
+      }
+      else {
+        if (gameBoard[row][this.col].whichPiece().team != this.team){
+          this.validMoves.push([row, this.col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let row = this.row + 1; row < 8; row++){
+      if (gameBoard[row][this.col].hasPiece == false){
+        this.validMoves.push([row, this.col]);
+      }
+      else {
+        if (gameBoard[row][this.col].whichPiece().team != this.team){
+          this.validMoves.push([row, this.col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let col = this.col - 1; col > -1; col--){
+      if (gameBoard[this.row][col].hasPiece == false){
+        this.validMoves.push([this.row, col]);
+      }
+      else {
+        if (gameBoard[this.row][col].whichPiece().team != this.team){
+          this.validMoves.push([this.row, col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let col = this.col + 1; col < 8; col++){
+      if (gameBoard[this.row][col].hasPiece == false){
+        this.validMoves.push([this.row, col]);
+      }
+      else {
+        if (gameBoard[this.row][col].whichPiece().team != this.team){
+          this.validMoves.push([this.row, col]);
+          break;
+        }
+        break;
+      }
+    }
+  }
+}
+
+class whiteRook extends rook {
+  constructor(row, col) {
+    super(row, col, "white");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/5/5c/Chess_rlt60.png"
+  }
+}
+
+class blackRook extends rook {
+  constructor(row, col){
+    super(row, col, "black");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/a/a0/Chess_rdt60.png"
+  }
+}
+
+class knight extends piece {
+  calculateValidMoves(){
+    this.validMoves = [];
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        if ((Math.abs(row - this.row) == 2 && Math.abs(col - this.col) == 1) || (Math.abs(row - this.row) == 1 && Math.abs(col - this.col) == 2)){
+          if (gameBoard[row][col].hasPiece == false || gameBoard[row][col].whichPiece().team != this.team){
+            this.validMoves.push([row, col]);
+          }
+        }
+      }
+    }
+  }
+}
+
+class whiteKnight extends knight {
+  constructor(row, col){
+    super(row, col, "white");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/2/28/Chess_nlt60.png"
+  }
+}
+
+class blackKnight extends knight {
+  constructor(row, col){
+    super(row, col, "black");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/f/f1/Chess_ndt60.png"
+  }
+}
+
+class bishop extends piece {
+  calculateValidMoves(){
+    this.validMoves = [];
+    for (let row = this.row - 1, col = this.col - 1; row > -1 && col > -1; row--, col--){
+      if (gameBoard[row][col].hasPiece == false){
+        this.validMoves.push([row, col]);
+      }
+      else {
+        if (gameBoard[row][col].whichPiece().team != this.team){
+          this.validMoves.push([row, col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let row = this.row - 1, col = this.col + 1; row > -1 && col < 8; row--, col++){
+      if (gameBoard[row][col].hasPiece == false){
+        this.validMoves.push([row, col]);
+      }
+      else {
+        if (gameBoard[row][col].whichPiece().team != this.team){
+          this.validMoves.push([row, col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let row = this.row + 1, col = this.col - 1; row < 8 && col > -1; row++, col--){
+      if (gameBoard[row][col].hasPiece == false){
+        this.validMoves.push([row, col]);
+      }
+      else {
+        if (gameBoard[row][col].whichPiece().team != this.team){
+          this.validMoves.push([row, col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let row = this.row + 1, col = this.col + 1; row < 8 && col < 8; row++, col++){
+      if (gameBoard[row][col].hasPiece == false){
+        this.validMoves.push([row, col]);
+      }
+      else {
+        if (gameBoard[row][col].whichPiece().team != this.team){
+          this.validMoves.push([row, col]);
+          break;
+        }
+        break;
+      }
+    }
+  }
+}
+
+class whiteBishop extends bishop {
+  constructor(row, col){
+    super(row, col, "white");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/9/9b/Chess_blt60.png"
+  }
+}
+
+class blackBishop extends bishop {
+  constructor(row, col){
+    super(row, col, "black");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/8/81/Chess_bdt60.png"
+  }
+}
+
+class queen extends piece {
+  calculateValidMoves(){
+    this.validMoves = [];
+    for (let row = this.row - 1; row > -1; row--){
+      if (gameBoard[row][this.col].hasPiece == false){
+        this.validMoves.push([row, this.col]);
+      }
+      else {
+        if (gameBoard[row][this.col].whichPiece().team != this.team){
+          this.validMoves.push([row, this.col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let row = this.row + 1; row < 8; row++){
+      if (gameBoard[row][this.col].hasPiece == false){
+        this.validMoves.push([row, this.col]);
+      }
+      else {
+        if (gameBoard[row][this.col].whichPiece().team != this.team){
+          this.validMoves.push([row, this.col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let col = this.col - 1; col > -1; col--){
+      if (gameBoard[this.row][col].hasPiece == false){
+        this.validMoves.push([this.row, col]);
+      }
+      else {
+        if (gameBoard[this.row][col].whichPiece().team != this.team){
+          this.validMoves.push([this.row, col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let col = this.col + 1; col < 8; col++){
+      if (gameBoard[this.row][col].hasPiece == false){
+        this.validMoves.push([this.row, col]);
+      }
+      else {
+        if (gameBoard[this.row][col].whichPiece().team != this.team){
+          this.validMoves.push([this.row, col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let row = this.row - 1, col = this.col - 1; row > -1 && col > -1; row--, col--){
+      if (gameBoard[row][col].hasPiece == false){
+        this.validMoves.push([row, col]);
+      }
+      else {
+        if (gameBoard[row][col].whichPiece().team != this.team){
+          this.validMoves.push([row, col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let row = this.row - 1, col = this.col + 1; row > -1 && col < 8; row--, col++){
+      if (gameBoard[row][col].hasPiece == false){
+        this.validMoves.push([row, col]);
+      }
+      else {
+        if (gameBoard[row][col].whichPiece().team != this.team){
+          this.validMoves.push([row, col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let row = this.row + 1, col = this.col - 1; row < 8 && col > -1; row++, col--){
+      if (gameBoard[row][col].hasPiece == false){
+        this.validMoves.push([row, col]);
+      }
+      else {
+        if (gameBoard[row][col].whichPiece().team != this.team){
+          this.validMoves.push([row, col]);
+          break;
+        }
+        break;
+      }
+    }
+    for (let row = this.row + 1, col = this.col + 1; row < 8 && col < 8; row++, col++){
+      if (gameBoard[row][col].hasPiece == false){
+        this.validMoves.push([row, col]);
+      }
+      else {
+        if (gameBoard[row][col].whichPiece().team != this.team){
+          this.validMoves.push([row, col]);
+          break;
+        }
+        break;
+      }
+    }
+  }
+}
+
+class whiteQueen extends queen {
+  constructor(row, col){
+    super(row, col, "white");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/4/49/Chess_qlt60.png"
+  }
+}
+
+class blackQueen extends queen {
+  constructor(row, col){
+    super(row, col, "black");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/a/af/Chess_qdt60.png"
+  }
+}
+
+class king extends piece {
+  calculateValidMoves(){
+    this.validMoves = [];
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        if (Math.abs(this.row - row) < 2 && Math.abs(this.col - col) < 2){
+          if (gameBoard[row][col].hasPiece == false || gameBoard[row][col].whichPiece().team != this.team){
+            this.validMoves.push([row, col]);
+          }
+        }
+      }
+    }
+  }
+}
+
+class whiteKing extends king {
+  constructor(row, col){
+    super(row, col, "white");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/3/3b/Chess_klt60.png"
+  }
+}
+
+class blackKing extends king {
+  constructor(row, col){
+    super(row, col, "black");
+  }
+  pic(){
+    return "https://upload.wikimedia.org/wikipedia/commons/e/e3/Chess_kdt60.png"
+  }
+}
+
+function checkIfOver(){
+  if (whitePieces[15].dead == true) {
+    alert("black wins")
+    location.reload();
+  }
+  if (blackPieces[15].dead == true) {
+    alert("white wins")
+    location.reload();
+  }
+}
+
+function checkPromotion(){
+  for (let num = 0; num < 8; num++) {
+    if (whitePieces[num].row == 0){
+      var col = whitePieces[num].col;
+      const promoted = new whiteQueen(0, col);
+      whitePieces[num] = promoted;
+      //hasMoved?
+    }
+    if (blackPieces[num].row == 7){
+      var col = blackPieces[num].col;
+      const promoted = new blackQueen(7, col);
+      blackPieces[num] = promoted;
+    }
+  }
+}
+
+drawBoard();
+initPieces();
+
+var selectedToMove = false;
+var selectedPiece;
+var turn = "white"
+
+function printMousePos(event) {
+  if (event.clientX > 10 && event.clientX < boardSize + 10 && event.clientY > 10 && event.clientY < boardSize + 10){
+    var col = Math.floor((event.clientX - 10)/squareSize);
+    var row = Math.floor((event.clientY - 10)/squareSize);
+      if (selectedToMove == false && gameBoard[row][col].hasPiece == true && gameBoard[row][col].whichPiece().team == turn) {
+        selectedToMove = true;
+        selectedPiece = gameBoard[row][col].whichPiece();
+        selectedPiece.highlightValidMoves();
+        gameBoard[row][col].highlight();
+      }
+    else if (selectedToMove == true && row == selectedPiece.row && col == selectedPiece.col){
+      selectedToMove = false;
+      drawBoard();
+      placePieces();
+    }
+    else if (selectedToMove == true && gameBoard[row][col].hasPiece == true && gameBoard[row][col].whichPiece().team == selectedPiece.team){
+      drawBoard();
+      placePieces();
+      selectedPiece = gameBoard[row][col].whichPiece();
+      selectedPiece.highlightValidMoves();
+      gameBoard[row][col].highlight();
+    }
+    else if (selectedToMove == true && gameBoard[row][col].hasPiece == false && includes(selectedPiece.validMoves, [row, col])){
+      gameBoard[selectedPiece.row][selectedPiece.col].hasPiece = false;
+      gameBoard[row][col].hasPiece = true;
+      selectedPiece.row = row;
+      selectedPiece.col = col;
+      selectedPiece.hasMoved = true;
+      selectedToMove = false;
+      checkPromotion();
+      drawBoard();
+      placePieces();
+      if (turn == "white") {
+        turn = "black";
+      }
+      else {
+        turn = "white";
+      }
+    }
+    else if (selectedToMove == true && gameBoard[row][col].hasPiece == true && includes(selectedPiece.validMoves, [row, col])){
+      var targetPiece = gameBoard[row][col].whichPiece();
+      if (targetPiece.team != selectedPiece.team){
+        gameBoard[selectedPiece.row][selectedPiece.col].hasPiece = false;
+        targetPiece.dead = true;
+        targetPiece.row = 0;
+        targetPiece.col = 8;
+        selectedPiece.row = row;
+        selectedPiece.col = col;
+        selectedPiece.hasMoved = true;
+        selectedToMove = false;
+        checkPromotion();
+        drawBoard();
+        placePieces();
+        if (turn == "white") {
+          turn = "black";
+        }
+        else {
+          turn = "white";
+        }
+      }
+    }
+    checkIfOver();
+  }
+}
+
+function reDraw(event){
+  drawBoard();
+  placePieces();
+}
+
+//confetti?
+
+document.addEventListener("click", printMousePos);
+document.addEventListener('resize', reDraw);
+
+</script>
+
+</body>
+</html>
